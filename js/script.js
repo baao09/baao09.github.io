@@ -2,24 +2,43 @@ const chatBox = document.getElementById("chatBox");
 const input = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 
+// Gửi khi click
 sendBtn.addEventListener("click", sendMessage);
-input.addEventListener("keypress", function(e) {
+
+// Gửi khi nhấn Enter
+input.addEventListener("keypress", function (e) {
   if (e.key === "Enter") {
     sendMessage();
   }
 });
 
-function sendMessage() {
+async function sendMessage() {
   const message = input.value.trim();
   if (!message) return;
 
   addMessage(message, "user");
   input.value = "";
 
-  // Tạm thời giả lập bot trả lời
-  setTimeout(() => {
-    addMessage("Bot đang hoạt động. Backend sẽ thêm sau.", "bot");
-  }, 500);
+  try {
+    const response = await fetch("https://baao09-github-io.onrender.com/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: message })
+    });
+
+    if (!response.ok) {
+      throw new Error("Server error");
+    }
+
+    const data = await response.json();
+    addMessage(data.reply || "Không có phản hồi từ server.", "bot");
+
+  } catch (error) {
+    addMessage("Không kết nối được server.", "bot");
+    console.error(error);
+  }
 }
 
 function addMessage(text, sender) {
@@ -27,5 +46,6 @@ function addMessage(text, sender) {
   msg.classList.add("message", sender);
   msg.innerText = text;
   chatBox.appendChild(msg);
+
   chatBox.scrollTop = chatBox.scrollHeight;
 }
