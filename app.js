@@ -3,14 +3,21 @@ const input = document.getElementById("q");
 const sendBtn = document.getElementById("send");
 const modePill = document.getElementById("modePill");
 
+// URL backend trên Render
+const API_BASE = "https://baao09-github-io.onrender.com";
+
 function addMsg(text, who, meta = "") {
   const wrap = document.createElement("div");
   wrap.className = `msg ${who}`;
   
-  // Dọn dẹp: Xóa các dấu **, * và # đứng đầu dòng nếu AI lỡ sinh ra
-  let cleanText = text.replace(/\*\*/g, "").replace(/(^|\n)\* /g, "$1- ").replace(/#/g, "");
-  
+  // Dọn dẹp nếu AI lỡ sinh Markdown
+  let cleanText = text
+    .replace(/\*\*/g, "")
+    .replace(/(^|\n)\* /g, "$1- ")
+    .replace(/#/g, "");
+
   wrap.textContent = cleanText;
+
   if (meta) {
     const m = document.createElement("div");
     m.className = "meta";
@@ -24,11 +31,11 @@ function addMsg(text, who, meta = "") {
 
 async function loadHealth() {
   try {
-    const r = await fetch("/api/health");
+    const r = await fetch(`${API_BASE}/api/health`);
     const j = await r.json();
     modePill.textContent = `MODE: ${j.mode} | model: ${j.model}`;
   } catch {
-    modePill.textContent = "MODE: (không rõ)";
+    modePill.textContent = "MODE: (không kết nối được backend)";
   }
 }
 
@@ -38,22 +45,24 @@ async function ask(question) {
   input.value = "";
 
   try {
-    const r = await fetch("/api/ask", {
+    const r = await fetch(`${API_BASE}/api/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question })
     });
 
     const j = await r.json();
+
     if (!r.ok) {
-      addMsg(j.error || "Lỗi", "bot");
+      addMsg(j.error || "Lỗi server", "bot");
       return;
     }
 
-    const meta = `Nguồn: openai | model: ${j.model || ""}`;
+    const meta = `Nguồn: gemini | model: ${j.model || ""}`;
     addMsg(j.answer || "(trống)", "bot", meta);
+
   } catch (e) {
-    addMsg("Không gọi được server. Bạn đã deploy/chạy server chưa?", "bot");
+    addMsg("Không gọi được server. Kiểm tra Render đã chạy chưa.", "bot");
   } finally {
     sendBtn.disabled = false;
     input.focus();
